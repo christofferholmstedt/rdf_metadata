@@ -9,6 +9,7 @@
 import sys
 from gi.repository import Gtk
 
+from . import helpers
 from . import model
 
 class SVGNodeList(object):
@@ -74,8 +75,8 @@ class MetadataEditor(object):
             orientation = Gtk.Orientation.VERTICAL)
 
         self.root = root
-
         self.root.register_observer(self._model_observer)
+        self.ns_help = helpers.NSUri()
 
         #
         # Control toolbar
@@ -107,7 +108,8 @@ class MetadataEditor(object):
         # 1: property
         # 2: value
         # 3: row type
-        self.tree_store = Gtk.TreeStore(object, str, str, str)
+        # 4: definition/tooltip
+        self.tree_store = Gtk.TreeStore(object, str, str, str, str)
 
         self.added_to_tree_store = set()
 
@@ -115,6 +117,7 @@ class MetadataEditor(object):
 
         # Set up display of the tree
         self.tree_view = Gtk.TreeView(self.tree_store)
+        self.tree_view.set_tooltip_column(4)
 
         render = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("Property", render, text = 1)
@@ -161,7 +164,11 @@ class MetadataEditor(object):
         else:
             label = '(default)'
 
-        res_iter = self.tree_store.append(None, [res, label, '', 'Resource'])
+        res_iter = self.tree_store.append(None, [res,
+                                            self.ns_help.get_standard(res.uri) + " - " + self.ns_help.get_label(res.uri),
+                                            '',
+                                            'Resource',
+                                            self.ns_help.get_definition(res.uri)])
 
         # Add the predicates and their target objects
         for pred in res:
@@ -172,12 +179,20 @@ class MetadataEditor(object):
         if isinstance(pred.object, model.LiteralNode):
             i = self.tree_store.append(
                 parent,
-                [pred, str(pred.uri), str(pred.object.value), 'Literal'])
+                [pred,
+                    self.ns_help.get_standard(pred.uri) + " - " + self.ns_help.get_label(pred.uri),
+                    str(pred.object.value),
+                    'Literal',
+                    self.ns_help.get_definition(pred.uri)])
 
         elif isinstance(pred.object, model.ResourceNode):
             i = self.tree_store.append(
                 parent,
-                [pred, str(pred.uri), str(pred.object.uri), 'Resource ref'])
+                [pred,
+                    self.ns_help.get_standard(pred.uri) + " - " + self.ns_help.get_label(pred.uri),
+                    str(pred.object.uri),
+                    'Resource ref',
+                    self.ns_help.get_definition(pred.uri)])
 
         elif isinstance(pred.object, model.BlankNode):
             node = pred.object
@@ -189,7 +204,11 @@ class MetadataEditor(object):
                 # Just add reference second time around
                 i = self.tree_store.append(
                     parent,
-                    [pred, str(pred.uri), str(node.uri), 'Blank node ref'])
+                    [pred,
+                        self.ns_help.get_standard(pred.uri) + " - " + self.ns_help.get_label(pred.uri),
+                        str(node.uri),
+                        'Blank node ref',
+                        self.ns_help.get_definition(pred.uri)])
             else:
                 self.added_to_tree_store.add(node)
 
@@ -200,7 +219,11 @@ class MetadataEditor(object):
 
                 i = self.tree_store.append(
                     parent,
-                    [pred, str(pred.uri), uri, 'Blank node'])
+                    [pred,
+                        self.ns_help.get_standard(pred.uri) + " - " + self.ns_help.get_label(pred.uri),
+                        uri,
+                        'Blank node',
+                        self.ns_help.get_definition(pred.uri)])
 
                 # Add the predicates and their target objects
                 for node_pred in node:

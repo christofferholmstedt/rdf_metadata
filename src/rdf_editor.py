@@ -12,7 +12,9 @@
 import sys
 from gi.repository import Gtk
 
-from RDFMetadata import parser, gtk_editor_widget
+from RDFMetadata import parser
+from RDFMetadata import gtk_editor_widget
+from RDFMetadata import helpers
 
 # Temporary: move into proper file loaders
 from xml.dom import minidom
